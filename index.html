@@ -201,6 +201,128 @@
       margin-top: 0.5rem;
       text-align: center;
   }
+  /* --- ESTILOS DEL HALL OF FAME --- */
+.hall-of-fame {
+  background: var(--panel); /* Usa una variable de color de fondo de tu juego */
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.hall-of-fame-title {
+  color: var(--blue-700); /* Usa una variable de color de texto de tu juego */
+  font-weight: 800;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+
+.hall-of-fame-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.hall-of-fame-table th {
+  background: var(--blue-600); /* Usa una variable de color de acento de tu juego */
+  color: white;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.hall-of-fame-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.hall-of-fame-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hall-of-fame-table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.hall-of-fame-error, .hall-of-fame-loading {
+  padding: 1rem;
+  text-align: center;
+  color: var(--blue-700);
+  font-style: italic;
+}
+
+.hall-of-fame-error {
+  color: var(--red); /* Usa una variable de color de error de tu juego */
+}
+/* --- ESTILOS DEL MODAL --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-title {
+  color: var(--blue); /* Color principal de tu juego */
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.modal-info {
+  margin-bottom: 1.5rem;
+  color: var(--blue-700);
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--blue-700);
+  font-weight: 600;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 2px solid #d3e2ff;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--blue-600);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
 </style>
 </head>
 <body>
@@ -218,6 +340,23 @@
         <strong>¡Buena suerte!</strong>
       </div>
       <button class="btn btn-primary" id="playBtn">Comenzar</button>
+      <!-- Hall of Fame -->
+<div class="hall-of-fame" id="hallOfFame">
+  <div class="hall-of-fame-title">🏆 Mejores puntuaciones 🏆</div>
+  <table class="hall-of-fame-table">
+    <thead>
+      <tr>
+        <th>Posición</th>
+        <th>Nombre</th>
+        <th>Puntos</th>
+        <th>Tiempo</th>
+      </tr>
+    </thead>
+    <tbody id="hofTableBody">
+      <!-- Aquí se cargarán las puntuaciones dinámicamente -->
+    </tbody>
+  </table>
+</div>
       <img class="start-image" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Ni%C3%B1os.png" alt="Niños aprendiendo">
     </div>
   </section>
@@ -286,8 +425,165 @@
     </div>
   </div>
 </div>
+<!-- Modal para enviar puntuación -->
+<div id="submitModal" style="display: none;">
+  <div class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">¡Felicidades!</h2>
+      <div class="modal-info">
+        Tu puntuación: <span id="modalScore"></span><br>
+        Tiempo: <span id="modalTime"></span>
+      </div>
+      <div class="form-group">
+        <label for="playerName" class="form-label">Nombre:</label>
+        <input type="text" id="playerName" class="form-input" placeholder="Introduce tu nombre" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label for="playerSurname" class="form-label">Apellido:</label>
+        <input type="text" id="playerSurname" class="form-input" placeholder="Introduce tu apellido" maxlength="20">
+      </div>
+      <div class="modal-buttons">
+        <button id="submitScoreBtn" class="btn btn-primary">Guardar puntuación</button>
+        <button id="discardScoreBtn" class="btn btn-ghost">No guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
+  // --- CONFIGURACIÓN DEL HALL OF FAME ---
+// Define el nombre de la pestaña en tu Google Sheets.
+const SHEET_NAME = "Aparatos"; // <-- ¡CAMBIA ESTO! Ej: "Geografia", "Ciencias"
+// Pega aquí la URL de tu Apps Script.
+const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwPDxbGmyC9WuNjaLuDgDSgrt74hMkyYTcAxyLoJ6qlI-TBmsV6W1ml5AXKC3TyMA8CQ/exec"; // <-- ¡CAMBIA ESTO!
+
+// --- FUNCIONES DE RED (Hall of Fame y Envío) ---
+
+function formatMixedTime(s) {
+  const m = Math.floor(s/60);
+  const sec = (s%60).toFixed(1).padStart(4, '0');
+  return `${m}m:${sec}s`;
+}
+
+/**
+ * Carga y muestra el Hall of Fame desde Google Sheets
+ */
+async function loadHallOfFame() {
+  const container = el('hofTableBody'); // Asegúrate que este ID coincida con tu HTML
+  
+  if (!APP_SCRIPT_URL || APP_SCRIPT_URL.includes("URL_DE_TU_SCRIPT")) {
+    container.innerHTML = '<tr><td colspan="4" class="hall-of-fame-error">URL de script no configurada.</td></tr>';
+    return;
+  }
+
+  try {
+    const uniqueUrl = APP_SCRIPT_URL + `?sheetName=${SHEET_NAME}&v=` + Date.now();
+
+    container.innerHTML = '<tr><td colspan="4" class="hall-of-fame-loading">Cargando...</td></tr>';
+
+    const res = await fetch(uniqueUrl); 
+    const json = await res.json();
+    
+    if (json.success && json.data && json.data.length > 0) {
+      let html = ``;
+      
+      json.data.forEach((row, i) => {
+        const nombre = row.name || "Anónimo";
+        const apellidoInicial = row.surname ? row.surname.charAt(0) + '.' : ""; 
+        const tiempo = row.time ? formatMixedTime(row.time) : "--";
+        const puntuacion = row.score || 0; 
+        
+        html += `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${nombre} ${apellidoInicial}</td>
+            <td>${puntuacion}</td>
+            <td>${tiempo}</td>
+          </tr>`;
+      });
+      
+      container.innerHTML = html;
+    } else if (json.success) {
+      container.innerHTML = '<tr><td colspan="4" class="hall-of-fame-loading">Sé el primero en aparecer aquí.</td></tr>';
+    } else {
+      throw new Error(json.error || "Error en datos");
+    }
+  } catch (e) {
+    console.error("Error cargando ranking:", e);
+    container.innerHTML = '<tr><td colspan="4" class="hall-of-fame-error">No se pudo cargar.</td></tr>';
+  }
+}
+
+/**
+ * Envía la puntuación al Script de Google
+ */
+async function submitScore(name, surname, time, score, buttonElement) {
+  const originalText = buttonElement.textContent;
+  buttonElement.disabled = true;
+  buttonElement.innerHTML = `<span style="display:inline-block; animation: spin 1s linear infinite;">⏳</span> Guardando...`;
+  
+  try {
+    const payload = { name, surname, time, score, sheetName: SHEET_NAME }; 
+    
+    const res = await fetch(APP_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    const json = await res.json();
+    
+    if (json.result === 'success' || json.success) {
+      // Cierre inmediato y recarga en segundo plano
+      el('submitModal').style.display = 'none';
+      loadHallOfFame(); 
+    } else {
+      throw new Error(json.error || "Error desconocido del servidor");
+    }
+  } catch (e) {
+    console.error("Error detallado al guardar:", e);
+    // Mensaje de error en el modal
+    const modalInfo = el('modal-info');
+    modalInfo.innerHTML = `<p style="color: var(--red); font-weight: 700;">Hubo un error al guardar.</p>`;
+  } finally {
+    // Restaurar el botón para que pueda intentarlo de nuevo si falla
+    buttonElement.disabled = false;
+    buttonElement.textContent = originalText;
+  }
+}
+
+/**
+ * Muestra el modal para guardar la puntuación y maneja los clics.
+ */
+function showSubmitModal(time, score) {
+  el('submitModal').style.display = 'block';
+  el('modalTime').textContent = formatMixedTime(time);
+  el('modalScore').textContent = score;
+  
+  // Clonar y reemplazar para evitar múltiples listeners
+  const subBtn = el('submitScoreBtn'), discBtn = el('discardScoreBtn');
+  const newSub = subBtn.cloneNode(true), newDisc = discBtn.cloneNode(true);
+  subBtn.replaceWith(newSub); discBtn.replaceWith(newDisc);
+  
+  newSub.addEventListener('click', () => {
+    reproducirSonidoTap(); // Asegúrate de tener esta función de sonido
+    const name = el('playerName').value.trim();
+    const surname = el('playerSurname').value.trim();
+    if (name && surname) {
+      submitScore(name, surname, time, score, newSub);
+    } else {
+      alert('Introduce nombre y apellidos');
+    }
+  });
+  
+  newDisc.textContent = 'No guardar';
+  newDisc.addEventListener('click', () => {
+    reproducirSonidoTap(); // Asegúrate de tener esta función de sonido
+    el('submitModal').style.display = 'none';
+    el('playerName').value = ''; 
+    el('playerSurname').value = '';
+  });
+}
+
 /************** Data **************/
 const DELAY_AFTER_ANSWER = 500; // 0.5 segundos
 
@@ -609,6 +905,8 @@ function finishGame(){
     reproducirSonidoCompletado(); 
   }
   mode = 'finished';
+  
+  showSubmitModal(elapsed, score);
 }
 
 function shuffle(a){ 
@@ -661,6 +959,8 @@ function gotoStart(){
   scoreEl.textContent='0'; 
   mode='start';
   markers.forEach(m=> m.classList.remove('correct-highlight', 'incorrect-highlight'));
+  
+  loadHallOfFame();
 }
 
 /**
